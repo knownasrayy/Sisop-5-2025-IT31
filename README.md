@@ -1,11 +1,12 @@
-# Sisop-5-2025-IT-Template
+# Sisop-5-2025-IT-31
 
 ## Kelompok
 
 Nama | NRP
 --- | ---
-Amoes Noland | 5027231028
-Rafi' Afnaan Fathurrahman | 5027231040
+Erlangga Valdhio Putra Sulistio | 5027241030
+Rayhan Agnan Kusuma | 5027241102
+S. Farhan Baig | 5027241097
 
 ## Daftar Isi
 
