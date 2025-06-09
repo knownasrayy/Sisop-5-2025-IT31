@@ -194,44 +194,24 @@ Berikut adalah penjelasan untuk setiap fitur yang diimplementasikan sesuai denga
 
 ### 1. The Echo: Menangani Perintah Tidak Valid
 
-**Soal:** Jika input dari pengguna bukan merupakan sebuah command yang valid, sistem akan mengulang kembali input tersebut.
+**Soal:** Kekuatan "The Echo" diimplementasikan sebagai mekanisme fallback di dalam loop utama shell(). Jika perintah yang dimasukkan pengguna tidak cocok dengan perintah valid manapun (yo, gurt, user, grandcompany, clear, dll.), sistem akan mencetak kembali string perintah yang dimasukkan oleh pengguna, sesuai dengan ilustrasi pada soal.
 
 **Implementasi:** Logika ini diimplementasikan di dalam loop utama `shell()` di `src/shell.c`. Sebuah variabel `bool command_executed` (bertipe `char`) digunakan sebagai flag. Flag ini diinisialisasi sebagai `false` di setiap awal iterasi loop. Jika sebuah perintah valid dieksekusi (misalnya, `yo`, `user`, `add`, dll.), flag ini akan diubah menjadi `true`. Di akhir loop, ada pengecekan: jika `command_executed` masih `false`, maka input asli pengguna akan dicetak kembali ke layar.
 
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-void shell() {
-    char buf[128];
-    // ... deklarasi variabel lain ...
-    char command_executed;
+// src/shell.c
 
-    // ... inisialisasi shell ...
-
-    while (true) {
-        command_executed = false; // Reset flag di setiap iterasi
-
-        printString(current_username);
-        // ... print prompt ...
-        readString(buf);
-        parseCommand(buf, cmd, args);
-
-        // Rangkaian if-else if untuk command valid
-        if (strcmp(cmd, "yo") == true) {
-            printString("gurt\n");
-            command_executed = true; // Set flag jika command valid
-        } else if (strcmp(cmd, "gurt") == true) {
-            // ...
-            command_executed = true;
-        } // ... dan seterusnya untuk command lain
-
-        // Blok "The Echo"
-        if (command_executed == false) {
-            printString(buf); // Cetak kembali input jika tidak ada command yang dieksekusi
-            printString("\n");
-        }
-    }
+// ... di dalam loop while(true)
+if (strcmp(cmd, "yo")) { /* ... */ }
+// ... (kondisi-kondisi lain)
+else if (cmd[0] != '\0') {
+    // Jika command tidak kosong dan tidak dikenali, cetak kembali (The Echo)
+    printString(buf);
+    printString("\n");
 }
+
 ```
 
 ### 2. Perintah gurt dan yo
@@ -243,13 +223,12 @@ void shell() {
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-// ... di dalam loop while(true) pada fungsi shell() ...
-if (strcmp(cmd, "yo") == true) {
+// src/shell.c
+
+if (strcmp(cmd, "yo")) {
     printString("gurt\n");
-    command_executed = true;
-} else if (strcmp(cmd, "gurt") == true) {
+} else if (strcmp(cmd, "gurt")) {
     printString("yo\n");
-    command_executed = true;
 }
 ```
 
@@ -265,21 +244,18 @@ if (strcmp(cmd, "yo") == true) {
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-// Variabel global
-char current_username[64];
+// src/shell.c
 
-// ... di dalam loop while(true) pada fungsi shell() ...
-else if (strcmp(cmd, "user") == true) {
-    if (args[0][0] == '\0') {
-        strcpy(current_username, "user");
-        printString("Username changed to user\n");
+void handle_user(char* new_user) {
+    if (new_user[0] == '\0') {
+        strcpy(username, "user");
+        printString("Username changed to default\n");
     } else {
-        strcpy(current_username, args[0]);
-        printString("Username changed to "); 
-        printString(current_username); 
+        strcpy(username, new_user);
+        printString("Username changed to ");
+        printString(new_user);
         printString("\n");
     }
-    command_executed = true;
 }
 ```
 
@@ -296,42 +272,27 @@ else if (strcmp(cmd, "user") == true) {
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-// Definisi warna dan variabel global
-#define COLOR_DEFAULT        0x07 // Putih
-#define COLOR_MAELSTROM      0x04 // Merah
-#define COLOR_TWINADDER      0x0E // Kuning
-#define COLOR_IMMORTALFLAMES 0x01 // Biru
+void handle_grandcompany(char* company) {
+    byte new_color;
+    char* new_suffix = "";
 
-char grand_company_suffix[16];
-
-// ... di dalam loop while(true) ...
-else if (strcmp(cmd, "grandcompany") == true) {
-    char gc_valid = false;
-    if (strcmp(args[0], "maelstrom") == true) {
-        setKernelTextAttribute(COLOR_MAELSTROM); 
-        clearScreen(); 
-        strcpy(grand_company_suffix, "@Storm"); 
-        gc_valid = true;
-    } else if (strcmp(args[0], "twinadder") == true) {
-        setKernelTextAttribute(COLOR_TWINADDER); 
-        clearScreen(); 
-        strcpy(grand_company_suffix, "@Serpent"); 
-        gc_valid = true;
-    } else if (strcmp(args[0], "immortalflames") == true) {
-        setKernelTextAttribute(COLOR_IMMORTALFLAMES); 
-        clearScreen(); 
-        strcpy(grand_company_suffix, "@Flame"); 
-        gc_valid = true;
+    if (strcmp(company, "maelstrom")) {
+        new_color = 0x04;
+        new_suffix = "@Storm";
+    } else if (strcmp(company, "twinadder")) {
+        new_color = 0x0E;
+        new_suffix = "@Serpent";
+    } else if (strcmp(company, "immortalflames")) {
+        new_color = 0x01; 
+        new_suffix = "@Flame";
+    } else {
+        printString("Invalid Grand Company. Choose: maelstrom, twinadder, or immortalflames.\n");
+        return;
     }
-    if (gc_valid == false) {
-        printString("Error: Invalid Grand Company specified.\n");
-    }
-    command_executed = true;
-} else if (strcmp(cmd, "clear") == true) {
-    setKernelTextAttribute(COLOR_DEFAULT); 
-    clearScreen(); 
-    grand_company_suffix[0] = '\0'; // Kosongkan suffix
-    command_executed = true;
+    
+    interrupt(0x10, 0x0600, new_color << 8, 0x0000, 0x184F);
+    interrupt(0x10, 0x0200, 0x0000, 0x0000, 0); 
+    strcpy(company_suffix, new_suffix);
 }
 ```
 
@@ -350,37 +311,37 @@ else if (strcmp(cmd, "grandcompany") == true) {
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-else if (strcmp(cmd, "add") == true || strcmp(cmd, "sub") == true || strcmp(cmd, "mul") == true || strcmp(cmd, "div") == true) {
-    if (args[0][0] == '\0' || args[1][0] == '\0') {
-        printString("Error: Calculator commands require two arguments.\n");
-    } else {
-        int val1, val2, result_val;
-        char calc_error = false;
+void handle_calc(char* op, char* arg1_str, char* arg2_str) {
+    int num1, num2, result;
+    char result_str[12];
 
-        atoi(args[0], &val1); 
-        atoi(args[1], &val2);
-
-        if (strcmp(cmd, "add") == true) result_val = val1 + val2;
-        else if (strcmp(cmd, "sub") == true) result_val = val1 - val2;
-        else if (strcmp(cmd, "mul") == true) result_val = val1 * val2;
-        else if (strcmp(cmd, "div") == true) {
-            if (val2 == 0) {
-                printString("Error: Division by zero.\n"); 
-                calc_error = true;
-            } else {
-                result_val = div(val1, val2);
-            }
-        }
-
-        if (calc_error == false) {
-            char result_str[16];
-            itoa(result_val, result_str); 
-            printString(result_str); 
-            printString("\n");
-        }
+    if (arg1_str[0] == '\0' || arg2_str[0] == '\0') {
+        printString("Error: Missing arguments for calculation.\n");
+        return;
     }
-    command_executed = true;
+
+    atoi(arg1_str, &num1);
+    atoi(arg2_str, &num2);
+
+    if (strcmp(op, "add")) {
+        result = num1 + num2;
+    } else if (strcmp(op, "sub")) {
+        result = num1 - num2;
+    } else if (strcmp(op, "mul")) {
+        result = num1 * num2;
+    } else if (strcmp(op, "div")) {
+        if (num2 == 0) {
+            printString("Error: Division by zero.\n");
+            return;
+        }
+        result = div(num1, num2);
+    }
+
+    itoa(result, result_str);
+    printString(result_str);
+    printString("\n");
 }
+
 ```
 
 ### 6. Perintah yogurt dengan Output Acak
@@ -396,32 +357,22 @@ else if (strcmp(cmd, "add") == true || strcmp(cmd, "sub") == true || strcmp(cmd,
 **Cuplikan Kode (`src/shell.c`):**
 
 ```c
-unsigned int random_seed;
+void handle_yogurt() {
+    int random_num;
 
-int simple_rand() {
-    random_seed = random_seed * 1103515245 + 12345;
-    return (unsigned int)(random_seed / 65536) % 32768;
-}
+    random_num = mod(rand(), 3);
 
-int get_random_int(int max_val) {
-    if (max_val <= 0) return 0;
-    return simple_rand() % max_val;
-}
-
-void shell() {
-    // ...
-    random_seed = _getBiosTick();
-    // ...
-    while (true) {
-        // ...
-        else if (strcmp(cmd, "yogurt") == true) {
-            int choice = get_random_int(3);
-            printString("gurt> ");
-            if (choice == 0) printString("yo\n");
-            else if (choice == 1) printString("ts unami gng </3\n");
-            else printString("sygau\n");
-            command_executed = true;
-        }
+    printString("gurt > ");
+    switch (random_num) {
+        case 0:
+            printString("yo\n");
+            break;
+        case 1:
+            printString("ts unami gng </3\n");
+            break;
+        case 2:
+            printString("sygau\n");
+            break;
     }
 }
 ```
