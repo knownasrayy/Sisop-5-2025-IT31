@@ -1,67 +1,69 @@
-#include "kernel.h" 
+#include "shell.h"
+#include "kernel.h"
 
-static byte KERNEL_CURRENT_TEXT_ATTRIBUTE = 0x07; 
-
-void setKernelTextAttribute(byte attribute) {
-    KERNEL_CURRENT_TEXT_ATTRIBUTE = attribute;
-}
 
 int main() {
-    clearScreen();   
-    shell();        
-
-    while (true);
-    return 0;
+  clearScreen();     
+  printString("Welcome to EorzeOS, Warrior of Light!\n");
+  shell();      
 }
+
 
 void printString(char *str) {
     int i = 0;
-    int ax_val;
-
     while (str[i] != '\0') {
-        ax_val = (0x0E << 8) | str[i]; 
-        _interrupt(0x10, ax_val, 0, 0, 0);
+        if (str[i] == '\n') {
+            interrupt(0x10, 0x0E00 | '\r', 0, 0, 0); 
+            interrupt(0x10, 0x0E00 | '\n', 0, 0, 0); 
+        } else {
+
+            interrupt(0x10, 0x0E00 | str[i], 0, 0, 0);
+        }
         i++;
     }
 }
 
+
+
 void readString(char *buf) {
     int i = 0;
     char c;
-    int ax_val;
 
     while (true) {
-        ax_val = _interrupt(0x16, 0x0000, 0, 0, 0);
-        c = (char)(ax_val & 0xFF);
+
+        c = interrupt(0x16, 0x00, 0, 0, 0);
 
         if (c == '\r') { 
-            buf[i] = '\0'; 
-            printString("\r\n");
+            buf[i] = '\0';
+            printString("\n");
             return;
-        } else if (c == '\b') {
+        } else if (c == '\b') { 
             if (i > 0) {
                 i--;
-                printString("\b \b");
+                printString("\b"); 
+                printString(" ");  
+                printString("\b");
             }
-        } else if (c >= ' ' && c <= '~') { 
+        } else { 
             buf[i] = c;
+            interrupt(0x10, 0x0E00 | c, 0, 0, 0);
             i++;
-
-     
-            ax_val = (0x0E << 8) | c;
-            _interrupt(0x10, ax_val, 0, 0, 0);
         }
-       
     }
 }
 
+
 void clearScreen() {
-    int i;
-    for (i = 0; i < 25 * 80; i++) {
-        _putInMemory(0xB800, i * 2, ' ');
-        _putInMemory(0xB800, i * 2 + 1, KERNEL_CURRENT_TEXT_ATTRIBUTE);
-    }
+    // Service 0x06: Scroll up/clear window
+    // AL = 0x00: Jumlah baris untuk di-scroll (0 = seluruh window)
+    // BH = 0x07: Atribut warna (putih di atas hitam)
+    // CX = 0x0000: Posisi awal (baris 0, kolom 0)
+    // DX = 0x184F: Posisi akhir (baris 24, kolom 79)
+    interrupt(0x10, 0x0600, 0x0700, 0x0000, 0x184F);
 
-
-    _interrupt(0x10, 0x0200, 0, 0, 0);
+    // Service 0x02: Set cursor position
+    // BH = 0x00: Page number
+    // DH = 0x00: Baris 0
+    // DL = 0x00: Kolom 0
+    interrupt(0x10, 0x0200, 0x0000, 0x0000, 0);
 }
