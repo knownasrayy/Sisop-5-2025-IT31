@@ -22,8 +22,6 @@ bootloader:
 
   int 0x13                  ; call BIOS interrupts
 
-  jc disk_error             ; jump if carry flag is set (error occurred)
-
   ; set up segment registers
   mov ax, KERNEL_SEGMENT
   mov ds, ax
@@ -31,32 +29,13 @@ bootloader:
   mov ss, ax
 
   ; set up stack pointer
-  mov sp, 0xFFF0
-  mov bp, 0xFFF0
+  mov ax, 0xFFF0
+  mov sp, ax
+  mov bp, ax
 
   ; jump to kernel
   jmp KERNEL_SEGMENT:0x0000
 
-  disk_error:
-  ; Print error message if kernel loading fails
-  mov si, error_msg
-  call print_string
-  jmp $
-
-print_string:
-  ; Print string at DS:SI
-  .next_char:
-    lodsb
-    or al, al
-    jz .done
-    mov ah, 0x0E
-    int 0x10
-    jmp .next_char
-  .done:
-    ret
-
-error_msg db 'Disk read error. Halting...', 0
-
   ; padding to make bootloader 512 bytes
-times 510-($-$$) db 0
-dw 0xAA55
+  times 510-($-$$) db 0
+  dw 0xAA55
