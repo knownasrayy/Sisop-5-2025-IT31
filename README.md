@@ -439,6 +439,10 @@ Sebuah jendela emulator akan muncul dan EorzeOS akan berjalan.
 ### 8. Dokumentasi Pengerjaan
 
 
-[Akses Video dalam Assets](./assets/2025-06-10 03-27-40.mp4)
+
+https://github.com/user-attachments/assets/aabe3f32-141a-45da-9a6c-cb7548856280
+
+
+
 
 
