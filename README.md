@@ -185,9 +185,10 @@ https://github.com/user-attachments/assets/1cfa66b1-b2f5-4e3e-a4b2-ec8b012f6fbb
 Dibuat sebagai pemenuhan tugas Praktikum Sistem Operasi tentang pembuatan shell sederhana dengan fitur-fitur kustom di atas kernel dasar.
 
 **Disusun oleh:**
-- **Nama:** [Nama Anda]
-- **NRP:** [NRP Anda]
-- **Kelas:** [Kelas Anda]
+
+* **Nama:** \[Nama Anda]
+* **NRP:** \[NRP Anda]
+* **Kelas:** \[Kelas Anda]
 
 ---
 
@@ -208,6 +209,7 @@ Berikut adalah penjelasan untuk setiap fitur yang diimplementasikan sesuai denga
 **Implementasi:** Logika ini diimplementasikan di dalam loop utama `shell()` di `src/shell.c`. Sebuah variabel `bool command_executed` (bertipe `char`) digunakan sebagai flag. Flag ini diinisialisasi sebagai `false` di setiap awal iterasi loop. Jika sebuah perintah valid dieksekusi (misalnya, `yo`, `user`, `add`, dll.), flag ini akan diubah menjadi `true`. Di akhir loop, ada pengecekan: jika `command_executed` masih `false`, maka input asli pengguna akan dicetak kembali ke layar.
 
 **Cuplikan Kode (`src/shell.c`):**
+
 ```c
 void shell() {
     char buf[128];
@@ -240,46 +242,196 @@ void shell() {
         }
     }
 }
+```
 
+### 2. Perintah gurt dan yo
 
+**Soal:** Membuat perintah gurt yang menghasilkan output yo, dan yo yang menghasilkan output gurt.
 
-### 1. The Echo: Menangani Perintah Tidak Valid
-
-**Soal:** Jika input dari pengguna bukan merupakan sebuah command yang valid, sistem akan mengulang kembali input tersebut.
-
-**Implementasi:** Logika ini diimplementasikan di dalam loop utama `shell()` di `src/shell.c`. Sebuah variabel `bool command_executed` (bertipe `char`) digunakan sebagai flag. Flag ini diinisialisasi sebagai `false` di setiap awal iterasi loop. Jika sebuah perintah valid dieksekusi (misalnya, `yo`, `user`, `add`, dll.), flag ini akan diubah menjadi `true`. Di akhir loop, ada pengecekan: jika `command_executed` masih `false`, maka input asli pengguna akan dicetak kembali ke layar.
+**Implementasi:** Di dalam shell.c, dua blok if-else if ditambahkan untuk menangani kedua perintah ini. Fungsi `strcmp` dari `std_lib.c` digunakan untuk membandingkan input dengan string "gurt" dan "yo".
 
 **Cuplikan Kode (`src/shell.c`):**
+
 ```c
-void shell() {
-    char buf[128];
-    // ... deklarasi variabel lain ...
-    char command_executed;
+// ... di dalam loop while(true) pada fungsi shell() ...
+if (strcmp(cmd, "yo") == true) {
+    printString("gurt\n");
+    command_executed = true;
+} else if (strcmp(cmd, "gurt") == true) {
+    printString("yo\n");
+    command_executed = true;
+}
+```
 
-    // ... inisialisasi shell ...
+### 3. Perintah user untuk Mengubah Username
 
-    while (true) {
-        command_executed = false; // Reset flag di setiap iterasi
+**Soal:**
 
-        printString(current_username);
-        // ... print prompt ...
-        readString(buf);
-        parseCommand(buf, cmd, args);
+* `user <username>`: Mengubah nama user pada shell.
+* `user`: Mengembalikan nama user ke "user".
 
-        // Rangkaian if-else if untuk command valid
-        if (strcmp(cmd, "yo") == true) {
-            printString("gurt\n");
-            command_executed = true; // Set flag jika command valid
-        } else if (strcmp(cmd, "gurt") == true) {
-            // ...
-            command_executed = true;
-        } // ... dan seterusnya untuk command lain
+**Implementasi:** Sebuah variabel global `current_username` digunakan untuk menyimpan nama pengguna saat ini. Perintah user diperiksa menggunakan `strcmp`. Jika ada argumen (`args[0][0] != '\0'`), nama pengguna diubah sesuai argumen menggunakan `strcpy`. Jika tidak ada argumen, nama pengguna direset kembali ke "user".
 
-        // Blok "The Echo"
-        if (command_executed == false) {
-            printString(buf); // Cetak kembali input jika tidak ada command yang dieksekusi
+**Cuplikan Kode (`src/shell.c`):**
+
+```c
+// Variabel global
+char current_username[64];
+
+// ... di dalam loop while(true) pada fungsi shell() ...
+else if (strcmp(cmd, "user") == true) {
+    if (args[0][0] == '\0') {
+        strcpy(current_username, "user");
+        printString("Username changed to user\n");
+    } else {
+        strcpy(current_username, args[0]);
+        printString("Username changed to "); 
+        printString(current_username); 
+        printString("\n");
+    }
+    command_executed = true;
+}
+```
+
+### 4. Grand Company: Kustomisasi Terminal
+
+**Soal:** Perintah `grandcompany` untuk mengubah warna teks, membersihkan layar, dan menambahkan suffix pada prompt. Perintah `clear` untuk mengembalikan ke pengaturan default.
+
+**Implementasi:**
+
+* **Warna:** Kode warna didefinisikan sebagai konstanta `#define`. Fungsi `setKernelTextAttribute()` (di `kernel.c`) dipanggil untuk mengubah atribut warna teks global.
+* **Suffix Prompt:** Variabel global `grand_company_suffix` digunakan untuk menyimpan suffix.
+* **Clear Screen:** Fungsi `clearScreen()` dipanggil untuk membersihkan layar.
+
+**Cuplikan Kode (`src/shell.c`):**
+
+```c
+// Definisi warna dan variabel global
+#define COLOR_DEFAULT        0x07 // Putih
+#define COLOR_MAELSTROM      0x04 // Merah
+#define COLOR_TWINADDER      0x0E // Kuning
+#define COLOR_IMMORTALFLAMES 0x01 // Biru
+
+char grand_company_suffix[16];
+
+// ... di dalam loop while(true) ...
+else if (strcmp(cmd, "grandcompany") == true) {
+    char gc_valid = false;
+    if (strcmp(args[0], "maelstrom") == true) {
+        setKernelTextAttribute(COLOR_MAELSTROM); 
+        clearScreen(); 
+        strcpy(grand_company_suffix, "@Storm"); 
+        gc_valid = true;
+    } else if (strcmp(args[0], "twinadder") == true) {
+        setKernelTextAttribute(COLOR_TWINADDER); 
+        clearScreen(); 
+        strcpy(grand_company_suffix, "@Serpent"); 
+        gc_valid = true;
+    } else if (strcmp(args[0], "immortalflames") == true) {
+        setKernelTextAttribute(COLOR_IMMORTALFLAMES); 
+        clearScreen(); 
+        strcpy(grand_company_suffix, "@Flame"); 
+        gc_valid = true;
+    }
+    if (gc_valid == false) {
+        printString("Error: Invalid Grand Company specified.\n");
+    }
+    command_executed = true;
+} else if (strcmp(cmd, "clear") == true) {
+    setKernelTextAttribute(COLOR_DEFAULT); 
+    clearScreen(); 
+    grand_company_suffix[0] = '\0'; // Kosongkan suffix
+    command_executed = true;
+}
+```
+
+### 5. Kalkulator Sederhana Rowena
+
+**Soal:** Implementasi perintah `add`, `sub`, `mul`, `div`.
+
+**Implementasi:**
+
+* Memeriksa apakah kedua argumen tersedia.
+* Menggunakan `atoi()` untuk mengubah string ke integer.
+* Melakukan operasi matematika yang sesuai.
+* Untuk `div`, ada pengecekan khusus untuk pembagian nol.
+* Hasil integer dikonversi kembali ke string dengan `itoa()`.
+
+**Cuplikan Kode (`src/shell.c`):**
+
+```c
+else if (strcmp(cmd, "add") == true || strcmp(cmd, "sub") == true || strcmp(cmd, "mul") == true || strcmp(cmd, "div") == true) {
+    if (args[0][0] == '\0' || args[1][0] == '\0') {
+        printString("Error: Calculator commands require two arguments.\n");
+    } else {
+        int val1, val2, result_val;
+        char calc_error = false;
+
+        atoi(args[0], &val1); 
+        atoi(args[1], &val2);
+
+        if (strcmp(cmd, "add") == true) result_val = val1 + val2;
+        else if (strcmp(cmd, "sub") == true) result_val = val1 - val2;
+        else if (strcmp(cmd, "mul") == true) result_val = val1 * val2;
+        else if (strcmp(cmd, "div") == true) {
+            if (val2 == 0) {
+                printString("Error: Division by zero.\n"); 
+                calc_error = true;
+            } else {
+                result_val = div(val1, val2);
+            }
+        }
+
+        if (calc_error == false) {
+            char result_str[16];
+            itoa(result_val, result_str); 
+            printString(result_str); 
             printString("\n");
         }
     }
+    command_executed = true;
+}
+```
+
+### 6. Perintah yogurt dengan Output Acak
+
+**Soal:** Perintah `yogurt` akan menampilkan salah satu dari tiga pesan secara acak.
+
+**Implementasi:**
+
+* **Seed Generator:** `random_seed` diinisialisasi dengan `_getBiosTick()`.
+* **Random Number Generator:** Fungsi `simple_rand()` dan `get_random_int()` digunakan.
+* **Handler Perintah:** `get_random_int(3)` menghasilkan angka 0-2, lalu memilih pesan sesuai angka.
+
+**Cuplikan Kode (`src/shell.c`):**
+
+```c
+unsigned int random_seed;
+
+int simple_rand() {
+    random_seed = random_seed * 1103515245 + 12345;
+    return (unsigned int)(random_seed / 65536) % 32768;
 }
 
+int get_random_int(int max_val) {
+    if (max_val <= 0) return 0;
+    return simple_rand() % max_val;
+}
+
+void shell() {
+    // ...
+    random_seed = _getBiosTick();
+    // ...
+    while (true) {
+        // ...
+        else if (strcmp(cmd, "yogurt") == true) {
+            int choice = get_random_int(3);
+            printString("gurt> ");
+            if (choice == 0) printString("yo\n");
+            else if (choice == 1) printString("ts unami gng </3\n");
+            else printString("sygau\n");
+            command_executed = true;
+        }
+    }
+}
+```
