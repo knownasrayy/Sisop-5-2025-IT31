@@ -392,3 +392,53 @@ void handle_yogurt() {
     }
 }
 ```
+
+
+### 7. Make file
+
+
+**Implementasi:**
+
+Makefile telah dilengkapi untuk mengotomatisasi seluruh proses kompilasi dan linking.
+
+prepare: Membuat direktori bin/ dan image floppy floppy.img.
+
+bootloader: Mengompilasi bootloader.asm.
+
+stdlib, shell, kernel: Mengompilasi masing-masing file C dan Assembly menjadi file objek.
+
+link: Menggabungkan semua file objek menjadi kernel.sys menggunakan ld86, lalu menulis bootloader.bin dan kernel.sys ke dalam floppy.img menggunakan dd.
+
+build: Menjalankan semua target di atas secara berurutan.
+
+
+```c
+# Makefile (Contoh target link)
+link:
+	ld86 -o bin/kernel.sys -d bin/kernel.o bin/kernel_asm.o bin/shell.o bin/std_lib.o
+	dd if=bin/bootloader.bin of=bin/floppy.img bs=512 count=1 conv=notrunc
+	dd if=bin/kernel.sys of=bin/floppy.img bs=512 seek=1 conv=notrunc
+```
+
+**Cara Kompilasi dan Menjalankan**
+
+Prasyarat: Pastikan nasm, bcc, dan bochs sudah terinstal di sistem Anda.
+
+Kompilasi: Buka terminal pada direktori utama proyek, lalu jalankan perintah:
+
+```sudo make build ```
+
+Perintah ini akan secara otomatis melakukan semua langkah yang diperlukan dan menghasilkan file bin/floppy.img.
+
+Menjalankan: Setelah proses build selesai, jalankan EorzeOS pada emulator Bochs dengan perintah:
+
+```bochs -f bochsrc.txt```
+
+Sebuah jendela emulator akan muncul dan EorzeOS akan berjalan.
+
+### 8. Dokumentasi Pengerjaan
+
+
+
+
+
