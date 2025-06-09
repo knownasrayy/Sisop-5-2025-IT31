@@ -6,17 +6,18 @@ bootloader:
 	nasm -f bin src/bootloader.asm -o bin/bootloader.bin
 
 stdlib:
-	gcc -m32 -ffreestanding -c src/std_lib.c -o bin/std_lib.o -Iinclude
+	bcc -ansi -c -o bin/std_lib.o src/std_lib.c -Iinclude
 
 shell:
-	gcc -m32 -ffreestanding -c src/shell.c -o bin/shell.o -Iinclude
+	bcc -ansi -c -o bin/shell.o src/shell.c -Iinclude
 
 kernel:
-	gcc -m32 -ffreestanding -c src/kernel.c -o bin/kernel.o -Iinclude
-	nasm -f elf src/kernel.asm -o bin/kernel_asm.o
+	bcc -ansi -c -o bin/kernel.o src/kernel.c -Iinclude
+	nasm -f as86 src/kernel.asm -o bin/kernel_asm.o
 
 link:
-	ld -m elf_i386 -Ttext 0x1000 bin/kernel.o bin/kernel_asm.o bin/std_lib.o bin/shell.o -o bin/kernel.bin
-	cat bin/bootloader.bin bin/kernel.bin > bin/floppy.img
+	ld86 -o bin/kernel.sys -d bin/kernel.o bin/kernel_asm.o bin/shell.o bin/std_lib.o
+	dd if=bin/bootloader.bin of=bin/floppy.img bs=512 count=1 conv=notrunc
+	dd if=bin/kernel.sys of=bin/floppy.img bs=512 seek=1 conv=notrunc
 
 build: prepare bootloader stdlib shell kernel link
