@@ -196,7 +196,7 @@ Berikut adalah penjelasan untuk setiap fitur yang diimplementasikan sesuai denga
 
 **Soal:** Kekuatan "The Echo" diimplementasikan sebagai mekanisme fallback di dalam loop utama shell(). Jika perintah yang dimasukkan pengguna tidak cocok dengan perintah valid manapun (yo, gurt, user, grandcompany, clear, dll.), sistem akan mencetak kembali string perintah yang dimasukkan oleh pengguna, sesuai dengan ilustrasi pada soal.
 
-**Implementasi:** Logika ini diimplementasikan di dalam loop utama `shell()` di `src/shell.c`. Sebuah variabel `bool command_executed` (bertipe `char`) digunakan sebagai flag. Flag ini diinisialisasi sebagai `false` di setiap awal iterasi loop. Jika sebuah perintah valid dieksekusi (misalnya, `yo`, `user`, `add`, dll.), flag ini akan diubah menjadi `true`. Di akhir loop, ada pengecekan: jika `command_executed` masih `false`, maka input asli pengguna akan dicetak kembali ke layar.
+**Implementasi:** Kekuatan "The Echo" diimplementasikan sebagai mekanisme fallback di dalam loop utama shell(). Jika perintah yang dimasukkan pengguna tidak cocok dengan perintah valid manapun (yo, gurt, user, grandcompany, clear, dll.), sistem akan mencetak kembali string perintah yang dimasukkan oleh pengguna, sesuai dengan ilustrasi pada soal.
 
 **Cuplikan Kode (`src/shell.c`):**
 
@@ -218,7 +218,7 @@ else if (cmd[0] != '\0') {
 
 **Soal:** Membuat perintah gurt yang menghasilkan output yo, dan yo yang menghasilkan output gurt.
 
-**Implementasi:** Di dalam shell.c, dua blok if-else if ditambahkan untuk menangani kedua perintah ini. Fungsi `strcmp` dari `std_lib.c` digunakan untuk membandingkan input dengan string "gurt" dan "yo".
+**Implementasi:** Implementasi dua perintah ini sangat sederhana, yaitu menggunakan if-else if untuk membandingkan string perintah dan mencetak respons yang sesuai.
 
 **Cuplikan Kode (`src/shell.c`):**
 
@@ -239,7 +239,11 @@ if (strcmp(cmd, "yo")) {
 * `user <username>`: Mengubah nama user pada shell.
 * `user`: Mengembalikan nama user ke "user".
 
-**Implementasi:** Sebuah variabel global `current_username` digunakan untuk menyimpan nama pengguna saat ini. Perintah user diperiksa menggunakan `strcmp`. Jika ada argumen (`args[0][0] != '\0'`), nama pengguna diubah sesuai argumen menggunakan `strcpy`. Jika tidak ada argumen, nama pengguna direset kembali ke "user".
+**Implementasi:** Perintah user ditangani oleh fungsi handle_user(char* new_user). Fungsi ini memeriksa apakah argumen pertama (new_user) kosong.
+
+*Jika kosong, nama pengguna di-reset ke "user".
+
+*Jika tidak kosong, nama pengguna akan diubah sesuai dengan argumen yang diberikan.
 
 **Cuplikan Kode (`src/shell.c`):**
 
@@ -265,9 +269,13 @@ void handle_user(char* new_user) {
 
 **Implementasi:**
 
-* **Warna:** Kode warna didefinisikan sebagai konstanta `#define`. Fungsi `setKernelTextAttribute()` (di `kernel.c`) dipanggil untuk mengubah atribut warna teks global.
-* **Suffix Prompt:** Variabel global `grand_company_suffix` digunakan untuk menyimpan suffix.
-* **Clear Screen:** Fungsi `clearScreen()` dipanggil untuk membersihkan layar.
+*Perintah grandcompany <nama> berfungsi untuk mengubah warna teks terminal dan menambahkan suffix pada prompt.
+
+*Mekanisme Perubahan Warna: Menggunakan interrupt 0x10 dengan service 0x06 (scroll/clear window). Atribut warna (misal: merah 0x04) disisipkan ke register BH untuk diaplikasikan ke seluruh layar.
+
+*Perubahan Suffix: Menggunakan strcpy untuk mengubah variabel global company_suffix.
+
+*Perintah clear: Memanggil clearScreen() untuk mengembalikan layar ke warna default (putih) dan mengosongkan company_suffix.
 
 **Cuplikan Kode (`src/shell.c`):**
 
@@ -302,11 +310,15 @@ void handle_grandcompany(char* company) {
 
 **Implementasi:**
 
-* Memeriksa apakah kedua argumen tersedia.
-* Menggunakan `atoi()` untuk mengubah string ke integer.
-* Melakukan operasi matematika yang sesuai.
-* Untuk `div`, ada pengecekan khusus untuk pembagian nol.
-* Hasil integer dikonversi kembali ke string dengan `itoa()`.
+*Keempat operasi ini ditangani oleh satu fungsi handle_calc().
+
+*Perintah diparsing untuk mendapatkan operator (add, sub, dll.) dan dua argumen string.
+
+*Fungsi atoi() digunakan untuk mengubah argumen string menjadi integer. Fungsi ini juga mampu menangani angka negatif.
+
+*Hasil kalkulasi diubah kembali menjadi string menggunakan itoa() untuk ditampilkan ke layar.
+
+*Ada penanganan khusus untuk pembagian dengan nol.
 
 **Cuplikan Kode (`src/shell.c`):**
 
@@ -350,9 +362,13 @@ void handle_calc(char* op, char* arg1_str, char* arg2_str) {
 
 **Implementasi:**
 
-* **Seed Generator:** `random_seed` diinisialisasi dengan `_getBiosTick()`.
-* **Random Number Generator:** Fungsi `simple_rand()` dan `get_random_int()` digunakan.
-* **Handler Perintah:** `get_random_int(3)` menghasilkan angka 0-2, lalu memilih pesan sesuai angka.
+Perintah yogurt memberikan salah satu dari tiga respons secara acak.
+
+*Generator Angka Acak (PRNG): Dibuat sebuah fungsi rand() sederhana menggunakan algoritma Linear Congruential Generator (LCG) yang aman untuk aritmatika 16-bit.
+
+*Keacakan Ditingkatkan: Untuk memastikan hasil yang berbeda setiap kali dijalankan, seed dari PRNG diinisialisasi dengan getBiosTick() saat shell pertama kali berjalan. Selanjutnya, setiap kali rand() dipanggil, nilai seed juga dicampur dengan nilai getBiosTick() saat itu juga.
+
+*Pemilihan Respons: Hasil dari mod(rand(), 3) digunakan dalam switch-case untuk memilih respons yang akan dicetak.
 
 **Cuplikan Kode (`src/shell.c`):**
 
