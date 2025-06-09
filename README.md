@@ -180,4 +180,164 @@ https://github.com/user-attachments/assets/1cfa66b1-b2f5-4e3e-a4b2-ec8b012f6fbb
 
 ## Laporan
 
-> Isi sesuai pengerjaan.
+ **Laporan Praktikum Sistem Operasi Modul 5: EorzeOS**
+
+| | |
+| :--- | :--- |
+| **Nama** | `[Isi dengan Nama Lengkap Anda]` |
+| **NRP** | `[Isi dengan NRP Anda]` |
+| **Mata Kuliah** | Sistem Operasi |
+| **Dosen Pengampu** | `[Isi dengan Nama Dosen Anda]` |
+
+---
+
+## **Daftar Isi**
+1.  [Abstrak](#1-abstrak)
+2.  [Struktur Proyek](#2-struktur-proyek)
+3.  [Implementasi Fitur](#3-implementasi-fitur)
+4.  [Analisis Implementasi Teknis](#4-analisis-implementasi-teknis)
+    - [4.1. Bootloader](#41-bootloader---bootloaderasm)
+    - [4.2. Kernel](#42-kernel---kernelc--kernelasm)
+    - [4.3. Shell](#43-shell---shellc)
+    - [4.4. Makefile](#44-makefile)
+5.  [Langkah-langkah Penggunaan](#5-langkah-langkah-penggunaan)
+6.  [Hasil dan Tangkapan Layar](#6-hasil-dan-tangkapan-layar)
+7.  [Kesimpulan](#7-kesimpulan)
+
+---
+
+## **1. Abstrak**
+
+Praktikum Modul 5 ini bertujuan untuk merancang dan mengimplementasikan sebuah sistem operasi 16-bit sederhana bernama **EorzeOS**. Proyek ini mencakup pengembangan komponen-komponen fundamental sistem operasi, mulai dari *bootloader* yang memuat sistem ke memori, *kernel* yang menyediakan layanan dasar untuk interaksi hardware, hingga *shell* sebagai antarmuka baris perintah (CLI) bagi pengguna. EorzeOS dilengkapi dengan berbagai fitur kustom sesuai tema yang diberikan, seperti kustomisasi prompt, perubahan warna terminal, kalkulator sederhana, dan perintah interaktif lainnya. Seluruh sistem dibangun menggunakan bahasa Assembly (NASM) untuk operasi tingkat rendah dan bahasa C (GCC 16-bit) untuk logika tingkat tinggi, serta diotomatisasi proses kompilasinya menggunakan `Makefile`.
+
+---
+
+## **2. Struktur Proyek**
+
+Struktur direktori proyek dirancang secara modular untuk memisahkan kode sumber, file *header*, dan hasil *build*.
+
+.
+├── bin/
+├── bochsrc.txt
+├── include/
+│   ├── kernel.h
+│   ├── shell.h
+│   ├── std_lib.h
+│   └── std_type.h
+├── makefile
+└── src/
+├── bootloader.asm
+├── kernel.asm
+├── kernel.c
+├── shell.c
+└── std_lib.c
+
+- **`src/`**: Berisi seluruh kode sumber (`.c` dan `.asm`).
+- **`include/`**: Berisi semua file *header* (`.h`) yang mendefinisikan *interface* antar modul.
+- **`bin/`**: Direktori keluaran untuk semua berkas hasil kompilasi, termasuk *object files*, *binary*, dan *disk image* akhir.
+- **`makefile`**: Mengatur seluruh alur kompilasi dan *linking*.
+- **`bochsrc.txt`**: File konfigurasi untuk menjalankan sistem operasi pada emulator Bochs.
+
+---
+
+## **3. Implementasi Fitur**
+
+Semua fitur yang disyaratkan dalam soal praktikum telah berhasil diimplementasikan.
+
+| Fitur / Perintah | Deskripsi Implementasi | Ilustrasi Penggunaan |
+| :--- | :--- | :--- |
+| **The Echo** | Merupakan kasus *default* pada parser perintah di `shell.c`. Jika tidak ada perintah valid yang cocok, input pengguna akan dicetak kembali. | `user> I have the Echo`<br>`I have the Echo` |
+| **`gurt` & `yo`** | Diimplementasikan dengan `strcmp()` untuk memeriksa input dan mencetak string balasan yang sudah ditentukan. | `user> gurt`<br>`yo` |
+| **`user`** | Menggunakan variabel global `current_username` di `shell.c`. Perintah ini memodifikasi variabel tersebut menggunakan `strcpy()`. Prompt akan membaca variabel ini setiap kali ditampilkan. | `user> user Tia`<br>`Username changed to Tia` |
+| **`grandcompany`** | Memvalidasi argumen (`maelstrom`, `twinadder`, `immortalflames`), lalu memanggil fungsi `setKernelTextAttribute()` dari kernel untuk mengatur warna, `strcpy()` untuk mengatur *suffix* prompt, dan `clearScreen()` untuk menerapkan perubahan. | `gurt> grandcompany maelstrom`<br>`-- terminal clear, warna jadi merah --` |
+| **`clear`** | Mengembalikan atribut warna ke nilai *default* (`0x07`), mengosongkan *string suffix* Grand Company, dan memanggil `clearScreen()`. | `gurt@Storm> clear`<br>`-- terminal clear, warna jadi putih --` |
+| **Kalkulator** | Mem-parsing dua argumen numerik dari input. Fungsi `atoi()` digunakan untuk konversi string ke integer, operasi aritmatika dilakukan, dan `itoa()` digunakan untuk mengonversi hasil kembali ke string untuk dicetak. | `user> mul 3 -2`<br>`-6` |
+| **`yogurt`** | Menggunakan `_getBiosTick()` dari kernel sebagai *seed* untuk generator angka acak sederhana. Hasil modulo 3 dari angka acak tersebut digunakan untuk memilih salah satu dari tiga respons teks. | `user> yogurt`<br>`gurt> ts unami gng </3` |
+
+---
+
+## **4. Analisis Implementasi Teknis**
+
+### **4.1. Bootloader - `bootloader.asm`**
+*Bootloader* adalah program 512-byte yang bertanggung jawab untuk memulai sistem. Prosesnya adalah sebagai berikut:
+1.  BIOS memuat *bootloader* dari sektor pertama *floppy disk* ke memori.
+2.  *Bootloader* menggunakan layanan **BIOS Interrupt `0x13`** (Disk Services) untuk membaca sektor-sektor berikutnya yang berisi *kernel* dari *disk*.
+3.  *Kernel* dimuat ke alamat fisik **`0x1000:0x0000`**.
+4.  Setelah berhasil, *bootloader* melakukan `jump` ke alamat tersebut, menyerahkan kontrol sepenuhnya kepada *kernel*.
+
+### **4.2. Kernel - `kernel.c` & `kernel.asm`**
+*Kernel* adalah inti dari EorzeOS yang menyediakan abstraksi perangkat keras untuk aplikasi tingkat tinggi (*shell*).
+-   **Interaksi Hardware (`kernel.asm`)**: Fungsi-fungsi krusial seperti `_interrupt` dan `_getBiosTick` ditulis dalam Assembly untuk dapat berinteraksi langsung dengan register CPU dan memanggil *interrupt* BIOS.
+-   **Layanan Kernel (`kernel.c`)**:
+    -   `printString()`: Mengiterasi *string* dan mencetak setiap karakter ke layar menggunakan *teletype output* dari **BIOS Interrupt `0x10` (Video Services)** dengan `AH = 0x0E`.
+    -   `readString()`: Mengambil input per karakter dari **BIOS Interrupt `0x16` (Keyboard Services)**. Implementasi ini juga menangani *backspace* (`\b`) untuk menghapus karakter dari *buffer* dan layar.
+    -   `clearScreen()`: Mengimplementasikan pembersihan layar dengan menulis langsung ke **Video Memory `0xB800`**. Setiap sel karakter (2 byte) diisi dengan spasi dan atribut warna teks saat ini (`KERNEL_CURRENT_TEXT_ATTRIBUTE`).
+
+### **4.3. Shell - `shell.c`**
+*Shell* bertindak sebagai *user interface*.
+-   **Struktur**: Sebuah *loop* tak terbatas (`while(true)`) menjadi inti dari *shell*, yang secara berulang: menampilkan *prompt*, membaca input, mem-parsing, dan mengeksekusi.
+-   **Parsing**: Fungsi `parseCommand()` bertanggung jawab memisahkan *string* input menjadi perintah utama dan maksimal dua argumen.
+-   **Eksekusi**: Logika `if-else if` yang ekstensif digunakan untuk mencocokkan perintah dengan fungsi yang sesuai. Sebuah *flag* `command_executed` digunakan untuk melacak apakah sebuah perintah valid telah dijalankan, yang jika tidak, akan memicu fitur "The Echo".
+
+### **4.4. Makefile**
+Sesuai dengan poin 7, sebuah `Makefile` telah dibuat untuk mengotomatisasi proses *build*.
+-   **Kompilator**: Menggunakan `nasm` untuk Assembly dan `i686-linux-gnu-gcc` sebagai *cross-compiler* C dengan *flag* `-m16` untuk menghasilkan kode 16-bit.
+-   **Proses**:
+    1.  Mengompilasi semua berkas `.c` dan `.asm` menjadi *object files* (`.o`).
+    2.  Menyatukan (*link*) semua *object files* menjadi sebuah berkas *kernel* dalam format ELF.
+    3.  Mengonversi berkas ELF menjadi *binary flat* (`.bin`).
+    4.  Membuat *disk image* kosong (`floppy.img`).
+    5.  Menulis `bootloader.bin` ke sektor pertama dan `kernel_image.bin` ke sektor berikutnya pada `floppy.img` menggunakan `dd`.
+
+---
+
+## **5. Langkah-langkah Penggunaan**
+
+**Prasyarat**:
+-   `make`
+-   `nasm`
+-   `i686-linux-gnu-gcc` (atau *cross-compiler* 16-bit lain)
+-   Emulator `bochs`
+
+**Perintah**:
+1.  **Build Proyek**: Untuk mengompilasi semua kode dan membuat `floppy.img`.
+    ```bash
+    make build
+    ```
+
+2.  **Jalankan OS**: Untuk menjalankan `floppy.img` pada emulator Bochs.
+    ```bash
+    make run
+    ```
+
+3.  **Bersihkan Build**: Untuk menghapus semua berkas hasil kompilasi.
+    ```bash
+    make clean
+    ```
+---
+
+## **6. Hasil dan Tangkapan Layar**
+
+Berikut adalah tangkapan layar yang mendokumentasikan fungsionalitas EorzeOS.
+
+**1. Tampilan Awal dan Fitur Echo**
+*Tampilan saat EorzeOS pertama kali dijalankan, menunjukkan prompt default dan respons "Echo" saat perintah tidak valid dimasukkan.*
+`[SISIPKAN GAMBAR DI SINI]`
+
+**2. Kustomisasi User dan Perintah Interaktif**
+*Menunjukkan perubahan prompt setelah perintah `user Tia` dan contoh output dari perintah `gurt` dan `yogurt`.*
+`[SISIPKAN GAMBAR DI SINI]`
+
+**3. Fitur Kalkulator**
+*Contoh penggunaan perintah `add`, `sub`, `mul`, dan `div`, termasuk dengan bilangan negatif.*
+`[SISIPKAN GAMBAR DI SINI]`
+
+**4. Fitur Grand Company**
+*Kolase gambar yang menunjukkan perubahan warna terminal dan prompt untuk `maelstrom` (merah), `twinadder` (kuning), `immortalflames` (biru), dan setelah `clear`.*
+`[SISIPKAN GAMBAR DI SINI]`
+
+---
+
+## **7. Kesimpulan**
+
+Proyek EorzeOS telah berhasil diimplementasikan sesuai dengan semua spesifikasi yang diberik
