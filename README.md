@@ -182,16 +182,6 @@ https://github.com/user-attachments/assets/1cfa66b1-b2f5-4e3e-a4b2-ec8b012f6fbb
 
 # Laporan Praktikum Sistem Operasi Modul 5: EorzeOS
 
-Dibuat sebagai pemenuhan tugas Praktikum Sistem Operasi tentang pembuatan shell sederhana dengan fitur-fitur kustom di atas kernel dasar.
-
-**Disusun oleh:**
-
-* **Nama:** \[Nama Anda]
-* **NRP:** \[NRP Anda]
-* **Kelas:** \[Kelas Anda]
-
----
-
 ## Deskripsi Umum
 
 **EorzeOS** adalah sistem operasi sederhana yang dibuat untuk memenuhi serangkaian tugas yang diberikan dalam soal praktikum. OS ini memiliki shell interaktif yang mampu menangani berbagai perintah, mulai dari input/output sederhana, kustomisasi user dan terminal, hingga operasi aritmatika dasar dan output acak. Proyek ini dibangun menggunakan Assembly (NASM) untuk bootloader dan fungsi kernel level rendah, serta bahasa C untuk logika kernel dan shell. Proses kompilasi dan linking diatur oleh sebuah `Makefile` untuk mempermudah proses build.
