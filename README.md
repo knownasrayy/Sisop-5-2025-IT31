@@ -240,13 +240,13 @@ void shell() {
         }
     }
 }
-2. Perintah gurt dan yo
-Soal: Membuat perintah gurt yang menghasilkan output yo, dan yo yang menghasilkan output gurt.
+### 2. Perintah gurt dan yo
+**Soal:** Membuat perintah gurt yang menghasilkan output yo, dan yo yang menghasilkan output gurt.
 
-Implementasi: Di dalam shell.c, dua blok if-else if ditambahkan untuk menangani kedua perintah ini. Fungsi strcmp dari std_lib.c digunakan untuk membandingkan input dengan string "gurt" dan "yo".
+**Implementasi:** dalam shell.c, dua blok if-else if ditambahkan untuk menangani kedua perintah ini. Fungsi strcmp dari std_lib.c digunakan untuk membandingkan input dengan string "gurt" dan "yo".
 
-Cuplikan Kode (src/shell.c):
-
+**Cuplikan Kode (`src/shell.c`):**
+```c
 C
 
 // ... di dalam loop while(true) pada fungsi shell() ...
@@ -258,15 +258,16 @@ if (strcmp(cmd, "yo") == true) {
     command_executed = true;
 }
 // ...
-3. Perintah user untuk Mengubah Username
-Soal:
+
+###3. Perintah user untuk Mengubah Username
+**Soal:**
 
 user <username>: Mengubah nama user pada shell.
 user: Mengembalikan nama user ke "user".
-Implementasi: Sebuah variabel global current_username digunakan untuk menyimpan nama pengguna saat ini. Perintah user diperiksa menggunakan strcmp. Jika ada argumen (args[0][0] != '\0'), nama pengguna diubah sesuai argumen menggunakan strcpy. Jika tidak ada argumen, nama pengguna direset kembali ke "user".
+**Implementasi:** Sebuah variabel global current_username digunakan untuk menyimpan nama pengguna saat ini. Perintah user diperiksa menggunakan strcmp. Jika ada argumen (args[0][0] != '\0'), nama pengguna diubah sesuai argumen menggunakan strcpy. Jika tidak ada argumen, nama pengguna direset kembali ke "user".
 
-Cuplikan Kode (src/shell.c):
-
+**Cuplikan Kode (`src/shell.c`):**
+```c
 C
 
 // Variabel global
